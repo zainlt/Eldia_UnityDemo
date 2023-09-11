@@ -1,34 +1,57 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Zain.Save;
 using UnityEngine.SceneManagement;
 
 namespace Zain.Transition
 {
-    public class Transition : MonoBehaviour
+    public class Transition : Singleton<Transition>, Isaveable
     {
         [SceneName]
         public string startSceneName = string.Empty;
-        private CanvasGroup fadeCanvasGroup;
+        public CanvasGroup fadeCanvasGroup;
         public bool isFade = false;
 
-        private IEnumerator Start()
-        {
-            fadeCanvasGroup = FindObjectOfType<CanvasGroup>();
+        public string GUID => GetComponent<DataGUID>().guid;
 
-            //为了让 CursorManager 在初始的时候就获得鼠标的具体位置
-            yield return LoadSceneSetActive(startSceneName);
-            EventHandler.CallAfterSceneLoadEvent();
+        protected override void Awake()
+        {
+            base.Awake();
+            SceneManager.LoadScene("UI", LoadSceneMode.Additive);
+        }
+
+        private void Start()
+        {
+            Isaveable saveable = this;
+            saveable.RegisterSaveable();
+
+            //fadeCanvasGroup = FindObjectOfType<CanvasGroup>();
+            fadeCanvasGroup = GameObject.FindWithTag("LoadFader").GetComponent<CanvasGroup>();
         }
 
         private void OnEnable()
         {
             EventHandler.TransitionEvent += OnTransitionEvent;
+            EventHandler.StartNewGameEvent += OnStartNewGameEvent;
+            EventHandler.EndGameEvent += OnEndGameEvent;
         }
 
         private void OnDisable()
         {
             EventHandler.TransitionEvent -= OnTransitionEvent;
+            EventHandler.StartNewGameEvent -= OnStartNewGameEvent;
+            EventHandler.EndGameEvent -= OnEndGameEvent;
+        }
+
+        private void OnEndGameEvent()
+        {
+            StartCoroutine(UnLoadScene());
+        }
+
+        private void OnStartNewGameEvent(int obj)
+        {
+            StartCoroutine(LoadSaveDataScene(startSceneName));
         }
 
         private void OnTransitionEvent(string sceneToGo, Vector3 positionToGo)
@@ -87,6 +110,44 @@ namespace Zain.Transition
             fadeCanvasGroup.blocksRaycasts = false;
 
             isFade = false;
+        }
+
+        private IEnumerator LoadSaveDataScene(string sceneName)
+        {
+            yield return Fade(1f);
+
+            if (SceneManager.GetActiveScene().name != "PersistentScene")    //在游戏过程中 加载另外游戏进度
+            {
+                EventHandler.CallBeforeSceneUnloadEvent();
+                yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene().buildIndex);
+            }
+
+            yield return LoadSceneSetActive(sceneName);
+            EventHandler.CallAfterSceneLoadEvent();
+            yield return Fade(0);
+        }
+
+        private IEnumerator UnLoadScene()
+        {
+            EventHandler.CallBeforeSceneUnloadEvent();
+            yield return Fade(1f);
+            yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene().buildIndex);
+            yield return Fade(0);
+        }
+
+        public GameSaveData GenerateSaveData()
+        {
+            GameSaveData saveData = new GameSaveData();
+
+            saveData.dataSceneName = SceneManager.GetActiveScene().name;
+
+            return saveData;
+        }
+
+        public void RestoreData(GameSaveData saveData)
+        {
+            //加载游戏进度场景
+            StartCoroutine(LoadSaveDataScene(saveData.dataSceneName));
         }
     }
 

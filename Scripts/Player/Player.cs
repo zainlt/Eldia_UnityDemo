@@ -1,12 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Zain.Save;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, Isaveable
 {
     private Rigidbody2D rb;
 
     public float speed;
+
+    //TODO:ÄÜÁ¿Ìõ
+    public float power;
     private float inputX, inputY;
 
     private Vector2 movementInput;
@@ -21,10 +25,13 @@ public class Player : MonoBehaviour
     private float mouseY;
     private bool useEquip;
 
+    public string GUID => GetComponent<DataGUID>().guid;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animators = GetComponentsInChildren<Animator>();
+        inputDisable = true;
     }
 
     private void OnEnable()
@@ -33,6 +40,9 @@ public class Player : MonoBehaviour
         EventHandler.AfterSceneLoadEvent += OnAfterSceneLoadEvent;
         EventHandler.MoveToPosition += OnMoveToPosition;
         EventHandler.MouseClickedEvent += OnMouseClickedEvent;
+        EventHandler.UpdateGameStateEvent += OnUpdateGameStateEvent;
+        EventHandler.StartNewGameEvent += OnStartNewGameEvent;
+        EventHandler.EndGameEvent += OnEndGameEvent;
     }
 
     private void OnDisable()
@@ -41,6 +51,46 @@ public class Player : MonoBehaviour
         EventHandler.AfterSceneLoadEvent -= OnAfterSceneLoadEvent;
         EventHandler.MoveToPosition -= OnMoveToPosition;
         EventHandler.MouseClickedEvent -= OnMouseClickedEvent;
+        EventHandler.UpdateGameStateEvent -= OnUpdateGameStateEvent;
+        EventHandler.StartNewGameEvent -= OnStartNewGameEvent;
+        EventHandler.EndGameEvent -= OnEndGameEvent;
+    }
+
+
+    private void FixedUpdate()
+    {
+        if (!inputDisable)
+            Movement();
+    }
+
+    private void Start()
+    {
+        Isaveable saveable = this;
+        saveable.RegisterSaveable();
+    }
+    
+    private void OnStartNewGameEvent(int obj)
+    {
+        inputDisable = false;
+        transform.position = Settings.playerStartPos;
+
+    }
+    private void OnEndGameEvent()
+    {
+        inputDisable = true;
+    }
+
+    private void OnUpdateGameStateEvent(GameState gameState)
+    {
+        switch (gameState)
+        {
+            case GameState.GamePlay:
+                inputDisable = false;
+                break;
+            case GameState.Pause:
+                inputDisable = true;
+                break;
+        }
     }
 
     private void OnMouseClickedEvent(Vector3 mouseWorldPos, ItemDetails itemDetails)
@@ -112,12 +162,6 @@ public class Player : MonoBehaviour
         SwitchAnimation();
     }
 
-    private void FixedUpdate()
-    {
-        if (!inputDisable)
-            Movement();
-    }
-
     private void PlayerInput()
     {
         inputX = Input.GetAxisRaw("Horizontal");
@@ -159,5 +203,21 @@ public class Player : MonoBehaviour
                 anim.SetFloat("InputY", inputY);
             }
         }
+    }
+
+    public GameSaveData GenerateSaveData()
+    {
+        GameSaveData saveData = new GameSaveData();
+        saveData.characterPosDict = new Dictionary<string, SerializableVector3>();
+        saveData.characterPosDict.Add(this.name, new SerializableVector3(transform.position));
+
+        return saveData;
+    }
+
+    public void RestoreData(GameSaveData savaData)
+    {
+        var targetPosition = savaData.characterPosDict[this.name].ToVector3();
+
+        transform.position = targetPosition;
     }
 }

@@ -17,13 +17,13 @@ public enum InventoryLocation
 //动画所属
 public enum PartType
 {
-    None, Carry, Hoe, Break
+    None, Carry, Hoe, Break, Chop
 }
 
 //动画的位置
 public enum PartName
 {
-    Body, Hair,Tool
+    Body, Hair, Tool
 }
 
 public enum Season
@@ -34,4 +34,22 @@ public enum Season
 public enum GridType
 {
     Diggable, DropItem, PlaceFurniture, NPCObstacle
+}
+
+public enum GameState
+{
+    GamePlay, Pause
+}
+
+public enum LightShift
+{
+    Morning, Night
+}
+
+public enum SoundName
+{
+    none, FootStepSoft, FootStepHard,
+    Axe, Pickaxe, Hoe, Reap, Water, Basket,
+    Pickup, Plant, TreeFalling, Rustle,
+    AmbientCountryside1, AmbientCountryside2, MusicCalm1, MusicCalm2, MusicCalm3, MusicCalm4, MusicCalm5, MusicCalm6, AmbientIndoor1
 }

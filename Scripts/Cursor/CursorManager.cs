@@ -1,17 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using Zain.Map;
+using Zain.Inventory;
+using Zain.CropPlant;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class CursorManager : MonoBehaviour
 {
-    public Sprite normal, tool, seed, item;
+    public Sprite normal, tool, seed, item, axe, pickedaxe, harm, collecthand, shovel;
 
+    //
     private Sprite currentSprite;  //
     private Image cursorImage;
     private RectTransform cursorCanvas;
+
+    //建造图标跟随
+    private Image buildImage;
 
     //鼠标检测
     private Camera mainCamera;
@@ -46,6 +52,10 @@ public class CursorManager : MonoBehaviour
     {
         cursorCanvas = GameObject.FindGameObjectWithTag("CursorCanvas").GetComponent<RectTransform>();
         cursorImage = cursorCanvas.GetChild(0).GetComponent<Image>();
+        //建造图标
+        buildImage = cursorCanvas.GetChild(1).GetComponent<Image>();
+        buildImage.gameObject.SetActive(false);
+
         currentSprite = normal;
         SetCursorImage(normal);
 
@@ -67,6 +77,7 @@ public class CursorManager : MonoBehaviour
         else
         {
             SetCursorImage(normal);
+            buildImage.gameObject.SetActive(false);
         }
     }
 
@@ -104,7 +115,7 @@ public class CursorManager : MonoBehaviour
     {
         cursorPositionValid = true;
         cursorImage.color = new Color(1, 1, 1, 1);
-        //buildImage.color = new Color(1, 1, 1, 0.5f);
+        buildImage.color = new Color(1, 1, 1, 0.5f);
     }
     /// <summary>
     /// 设置鼠标不可用
@@ -113,17 +124,19 @@ public class CursorManager : MonoBehaviour
     {
         cursorPositionValid = false;
         cursorImage.color = new Color(1, 0, 0, 0.4f);
-        //buildImage.color = new Color(1, 0, 0, 0.5f);
+        buildImage.color = new Color(1, 0, 0, 0.5f);
     }
     #endregion
 
-    private void OnItemSelectedEvent(ItemDetails itemDetails, bool isSelected)
+
+    private void OnItemSelectedEvent(ItemDetails itemDetails, bool isSelected, SlotType slotType)
     {
-        if (!isSelected)
+        if (!isSelected || slotType == SlotType.Shop)
         {
             currentItem = null;
             cursorEnable = false;
             currentSprite = normal;
+            buildImage.gameObject.SetActive(false);
         }
         else
         {
@@ -133,16 +146,24 @@ public class CursorManager : MonoBehaviour
             {
                 ItemType.Seed => seed,
                 ItemType.Commodity => item,
-                ItemType.ChopTool => tool,
-                ItemType.HoeTool => tool,
+                ItemType.ChopTool => axe,
+                ItemType.HoeTool => shovel,
                 ItemType.WaterTool => tool,
-                ItemType.BreakTool => tool,
+                ItemType.BreakTool => pickedaxe,
                 ItemType.ReapTool => tool,
-                ItemType.Furniture => tool,
-                ItemType.CollectTool => tool,
+                ItemType.Furniture => harm,
+                ItemType.CollectTool => collecthand,
                 _ => normal,
             };
             cursorEnable = true;
+
+            //设置建造图片
+            if (itemDetails.itemType == ItemType.Furniture)
+            {
+                buildImage.gameObject.SetActive(true);
+                buildImage.sprite = itemDetails.itemOnWorldSprite;
+                buildImage.SetNativeSize();
+            }
         }
 
     }
@@ -156,8 +177,9 @@ public class CursorManager : MonoBehaviour
         //Debug.Log(mouseWorldPos + " gridpos :" + mouseGridPos);
         var playerGridPos = currentGrid.WorldToCell(PlayerTransform.position);
         //Debug.Log(mouseGridPos);
+
         //建造图片跟随移动
-        //buildImage.rectTransform.position = Input.mousePosition;
+        buildImage.rectTransform.position = Input.mousePosition;
 
         //判断在使用范围内
         if (Mathf.Abs(mouseGridPos.x - playerGridPos.x) > currentItem.itemUseRadius || Mathf.Abs(mouseGridPos.y - playerGridPos.y) > currentItem.itemUseRadius)
@@ -170,13 +192,56 @@ public class CursorManager : MonoBehaviour
 
         if (currentTile != null)
         {
+            CropDetails currentCrop = CropManager.Instance.GetCropDetails(currentTile.seedItemID);
+            Crop crop = GridMapManager.Instance.GetCropObject(mouseWorldPos);
+
+            //WORKFLOW:
             switch (currentItem.itemType)
             {
+                case ItemType.Seed:
+                    if (currentTile.daysSinceDig > -1 && currentTile.seedItemID == -1) SetCursorValid(); else SetCursorInValid();
+                    break;
                 case ItemType.Commodity:
                     if (currentTile.canDropItem && currentItem.canDropped) SetCursorValid(); else SetCursorInValid();
                     break;
                 case ItemType.HoeTool:
                     if (currentTile.canDig) SetCursorValid(); else SetCursorInValid();
+                    break;
+                case ItemType.BreakTool:
+                    if (crop != null)
+                    {
+                        if (crop.CanHarvest && crop.cropDetails.CheckToolAvailable(currentItem.itemID)) SetCursorValid(); else SetCursorInValid();
+                    }
+                    else
+                        SetCursorInValid();
+                    break;
+                case ItemType.ChopTool:
+                    if (crop != null)
+                    {
+                        if (crop.CanHarvest && crop.cropDetails.CheckToolAvailable(currentItem.itemID)) SetCursorValid(); else SetCursorInValid();
+                    }
+                    else
+                        SetCursorInValid();
+                    break;
+                case ItemType.CollectTool:
+                    if (currentCrop != null)
+                    {
+                        if (currentCrop.CheckToolAvailable(currentItem.itemID))
+                            if (currentTile.growthDays >= currentCrop.TotalGrowthDays) SetCursorValid(); else SetCursorInValid();
+                    }
+                    else SetCursorInValid();
+                    break;
+                case ItemType.Furniture:
+                    buildImage.gameObject.SetActive(true);
+                    var bluePrintDetails = InventoryManager.Instance.bluePrintData.GetBluePrintDetails(currentItem.itemID);
+
+
+                    if (currentTile.canPlaceFurniture && InventoryManager.Instance.CheckStock(currentItem.itemID) && !HaveFurnitureInRadius(bluePrintDetails))
+                    {
+                        SetCursorValid();
+                    }
+                    else SetCursorInValid();
+
                     break;
             }
         }
@@ -184,6 +249,18 @@ public class CursorManager : MonoBehaviour
         {
             SetCursorInValid();
         }
+    }
+
+    private bool HaveFurnitureInRadius(BluePrintDetails bluePrintDetails)
+    {
+        var buildItem = bluePrintDetails.buildPrefab;
+        Vector2 point = mouseWorldPos;
+        var size = buildItem.GetComponent<BoxCollider2D>().size;
+
+        var othercoll = Physics2D.OverlapBox(point, size, 0);
+        if (othercoll != null)
+            return othercoll.GetComponent<Furniiture>();
+        return false;
     }
 
     private bool InteractWithUI()

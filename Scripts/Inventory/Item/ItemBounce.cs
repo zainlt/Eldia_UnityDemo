@@ -10,7 +10,8 @@ namespace Zain.Inventory
         private BoxCollider2D coll;
 
         public float gravity = -3.5f;
-        private bool isGround;
+        public bool isGround;
+        public bool isPicked;
         private float distance;
         private Vector2 direction;
         private Vector3 targetPos;
@@ -55,7 +56,15 @@ namespace Zain.Inventory
             {
                 spriteTrans.position = transform.position;
                 coll.enabled = true;
+                //StartCoroutine(WaitTime());
+                isPicked = true;
             }
         }
+
+        //private IEnumerator WaitTime()
+        //{
+        //    yield return new WaitForSeconds(0.5f);
+        //    isPicked = true;
+        //}
     }
 }

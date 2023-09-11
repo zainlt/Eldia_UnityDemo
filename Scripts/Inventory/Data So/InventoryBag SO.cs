@@ -6,4 +6,8 @@ using UnityEngine;
 public class InventoryBag_SO : ScriptableObject
 {
     public List<InventoryItem> itemList;
+    public InventoryItem GetInventoryItem(int itemID)
+    {
+        return itemList.Find(i => i.itemID == itemID);
+    }
 }

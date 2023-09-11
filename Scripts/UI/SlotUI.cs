@@ -20,8 +20,22 @@ namespace Zain.Inventory
 
         public ItemDetails itemDetails;
         public int itemAmount;
+        private bool isOpened;
 
-        private InventoryUI inventoryUI => GetComponentInParent<InventoryUI>();
+        public InventoryLocation location
+        {
+            get
+            {
+                return slotType switch
+                {
+                    SlotType.Bag => InventoryLocation.Player,
+                    SlotType.Box => InventoryLocation.Box,
+                    _ => InventoryLocation.Player,
+                };
+            }
+        }
+
+        public InventoryUI inventoryUI => GetComponentInParent<InventoryUI>();
 
         private void Start()
         {
@@ -57,32 +71,54 @@ namespace Zain.Inventory
                 isSelected = false;
 
                 inventoryUI.UpdateSlotHightLight(-1);
-                EventHandler.CallItemSelectedEvent(itemDetails, isSelected);
+                EventHandler.CallItemSelectedEvent(itemDetails, isSelected ,slotType);
             }
 
             itemDetails = null;
             slotImage.enabled = false;
             amountText.text = string.Empty;
             button.interactable = false;
+            itemAmount = 0;
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
             if (itemDetails == null) return;
-            isSelected = !isSelected;
+            
 
-            inventoryUI.UpdateSlotHightLight(slotIndex);
-
-            if(slotType == SlotType.Bag)
+            if (slotType == SlotType.Bag)
             {
-                //通知物品被选中的状态
-                EventHandler.CallItemSelectedEvent(itemDetails, isSelected);
+                if (eventData.button == PointerEventData.InputButton.Left)
+                {
+                    isSelected = !isSelected;
+
+                    inventoryUI.UpdateSlotHightLight(slotIndex);
+
+                    //通知物品被选中的状态
+                    EventHandler.CallItemSelectedEvent(itemDetails, isSelected, slotType);
+                }
+                //鼠标右键
+                else if (eventData.button == PointerEventData.InputButton.Right && GetItemType(itemDetails))
+                {
+
+                    EventHandler.CallShowTradeUI(itemDetails, true, slotType);
+                }
             }
+            else if (slotType == SlotType.Shop)
+            {
+                isSelected = !isSelected;
+
+                inventoryUI.UpdateSlotHightLight(slotIndex);
+                //通知物品被选中的状态
+                EventHandler.CallItemSelectedEvent(itemDetails, isSelected, slotType);
+                EventHandler.CallShowTradeUI(itemDetails, false, slotType);
+            }
+
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (itemAmount != 0)
+            if (itemAmount != 0 && slotType != SlotType.Shop)
             {
                 inventoryUI.dragItem.enabled = true;
                 inventoryUI.dragItem.sprite = slotImage.sprite;
@@ -116,20 +152,39 @@ namespace Zain.Inventory
                 {
                     InventoryManager.Instance.SwapItem(slotIndex, targetIndex);
                 }
+                else if (slotType != SlotType.Shop && target.slotType != SlotType.Shop && slotType != target.slotType)
+                {
+                    //跨背包交换数据
+                    InventoryManager.Instance.SwapItem(location, slotIndex, target.location, target.slotIndex);
+                }
 
                 //
                 inventoryUI.UpdateSlotHightLight(-1);
             }
-            else
-            {
-                if (itemDetails.canDropped)
-                {
+            //else
+            //{
+            //    if (itemDetails.canDropped)
+            //    {
                     
-                    var post = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
-                    EventHandler.CallInstantiateItemInSecene(itemDetails.itemID, post);
-                }
+            //        var post = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
+            //        //EventHandler.CallInstantiateItemInSecene(itemDetails.itemID, post);
+            //        EventHandler.CallDropItemEvent(itemDetails.itemID, post, itemDetails.itemType);
+            //    }
 
-            }
+            //}
+        }
+
+        private bool GetItemType(ItemDetails itemDetails)
+        {
+            bool isCanSell = itemDetails.itemType switch
+            {
+                ItemType.Seed => true,
+                ItemType.Furniture => true,
+                ItemType.Commodity => true,
+                _ => false,
+            };
+
+            return isCanSell;
         }
     }
 

@@ -1,4 +1,6 @@
 using UnityEngine;
+using System;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class ItemDetails
@@ -67,6 +69,15 @@ public class SceneItem
 }
 
 [System.Serializable]
+public class SceneFurniture
+{
+    public int itemID;
+    public SerializableVector3 position;
+    public int boxIndex;
+}
+
+
+[System.Serializable]
 public class TileProperty
 {
     public Vector2Int tileCoordinate;
@@ -90,4 +101,30 @@ public class TileDetails
     public int seedItemID = -1;
     public int growthDays = -1; //种子已经成长天数
     public int daysSinceLastHarvest = -1;   //上次收割有多少天
+}
+
+[System.Serializable] 
+public class NPCPosition
+{
+    public Transform npc;
+    public string startScene;
+    public Vector3 position;
+}
+
+[System.Serializable]
+public class SceneRoute
+{
+    public string fromSceneName;
+    public string gotoSceneName;
+    public List<ScenePath> scenePathList;
+}
+
+
+[System.Serializable]
+//场景路径
+public class ScenePath
+{
+    public string sceneName;
+    public Vector2Int fromGridCell;
+    public Vector2Int gotoGridCell;
 }

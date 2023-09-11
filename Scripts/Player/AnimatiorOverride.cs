@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Zain.Inventory;
 
 public class AnimatiorOverride : MonoBehaviour
 {
@@ -25,12 +26,31 @@ public class AnimatiorOverride : MonoBehaviour
     {
         EventHandler.ItemSelectedEvent += OnItemSeletedEvent;
         EventHandler.BeforeSceneUnloadEvent += OnBeforeSceneUnloadEvent;
+        EventHandler.HarvestAtPlayerPosition += OnHarvestAtPlayerPosition;
     }
 
     private void OnDisable()
     {
         EventHandler.ItemSelectedEvent -= OnItemSeletedEvent;
         EventHandler.BeforeSceneUnloadEvent -= OnBeforeSceneUnloadEvent;
+        EventHandler.HarvestAtPlayerPosition -= OnHarvestAtPlayerPosition;
+    }
+
+    private void OnHarvestAtPlayerPosition(int ID)
+    {
+        Sprite itemSprite = InventoryManager.Instance.GetItemDetails(ID).itemOnWorldSprite;
+        if(holdItem.enabled == false)
+        {
+            StartCoroutine(ShowItem(itemSprite));
+        }
+    }
+
+    private IEnumerator ShowItem(Sprite itemSprite)
+    {
+        holdItem.sprite = itemSprite;
+        holdItem.enabled = true;
+        yield return new WaitForSeconds(1f);
+        holdItem.enabled = false;
     }
 
     private void OnBeforeSceneUnloadEvent()
@@ -39,7 +59,7 @@ public class AnimatiorOverride : MonoBehaviour
         SwitchAnimator(PartType.None);
     }
 
-    private void OnItemSeletedEvent(ItemDetails itemDetails, bool isSeleted)
+    private void OnItemSeletedEvent(ItemDetails itemDetails, bool isSeleted ,SlotType slotType)
     {
         PartType currentType = itemDetails.itemType switch
         {
@@ -47,10 +67,12 @@ public class AnimatiorOverride : MonoBehaviour
             ItemType.Seed => PartType.Carry,
             ItemType.Commodity => PartType.Carry,
             ItemType.HoeTool => PartType.Hoe,
+            ItemType.ChopTool => PartType.Chop,
+            ItemType.BreakTool => PartType.Break,
             _ => PartType.None
         };
 
-        if(isSeleted == false)
+        if(isSeleted == false || slotType == SlotType.Shop)
         {
             currentType = PartType.None;
             holdItem.enabled = false;

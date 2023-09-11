@@ -16,6 +16,11 @@ namespace Zain.Inventory
                 {
                     //拾取物品
                     InventoryManager.Instance.AddItem(item, true);
+
+                    //TODO:UI显示
+                    EventHandler.CallInitPickedItemEffect(item.itemDetails);
+
+                    EventHandler.CallPlaySoundEvent(SoundName.Pickup);
                 }
             }
         }
