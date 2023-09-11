@@ -46,5 +46,20 @@ NPC系统：在设置NPC的自动寻路、对应时间的事件触发、与人�
 10.在存储数据的模块中，使用Unity插件_Newtonsoft-Json_进行数据的序列化和保存，在读取时再进行反序列化交给各个模块的管理类进行初始游戏数据。  
 
 ## 项目收获
+
 1.了解一个功能从提出到完成发布的完整过程，对于Unity的一些插件和组件有了更深入的了解，包括但不限于Events、UGUI;  
 2.在反复的试错中，实现了游戏一些常见系统，比如交易系统、背包系统、建造系统、与NPC的互动等，提高个人的代码水平和debug能力；  
+
+## 演示视频
+
+## 演示图片
+1.![开始界面](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/%E5%BC%80%E5%A7%8B%E7%95%8C%E9%9D%A2.png)  
+2.![图片1](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/1.png)  
+3.![图片2](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/2.png)  
+4.![图片3](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/4.png)
+5.![图片4](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/5.png)
+6.![图片5](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/6.png)
+7.![图片6](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/7.png)
+8.![图片7](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/9.png)
+9.![图片8](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/10.png)
+10.![图片9](https://github.com/zainlt/Eldia_UnityDemo/blob/main/Image_Introduce/11.png)
